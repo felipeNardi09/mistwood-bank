@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(uuid())
+  name        String    @db.VarChar(255)
+  email       String    @unique
+  password    String    @db.VarChar(255)
+  dateOfBirth DateTime  @db.Timestamp(3)
+  accounts    Account[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+}
+
+model Account {
+  id            String     @id @default(uuid())
+  accountNumber String     @unique
+  balance       BigInt
+  type          AccountType
+  userId        String @unique
+  user          User       @relation(fields: [userId], references: [id])
+  branchId      String
+  branch        Branch     @relation(fields: [branchId], references: [id])
+  transferFromAccount   Transaction[] @relation(name: "from")
+   transferToAccount   Transaction[] @relation(name: "to")
+   loans Loan[]
+  cards         Card[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER
+}
+
+model Transaction {
+  id              String      @id @default(uuid())
+  amount          BigInt
+  type            TransactionType
+  date            DateTime    @default(now())
+  description     String?
+  accountId       String
+  destinationAccountId String
+  account         Account     @relation( name: "from", fields: [accountId], references: [id])
+  destinationAccount Account @relation( name: "to", fields: [destinationAccountId],references: [id])
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+enum CardType {
+  CREDIT
+  DEBIT
+}
+
+model Card {
+  id            String    @id @default(uuid())
+  cardNumber    String    @unique
+  type          CardType  @default(DEBIT)
+  expirationDate DateTime
+  cvv           Int       @db.Integer
+  accountId     String
+  account       Account   @relation(fields: [accountId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum LoanStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Loan {
+  id            String    @id @default(uuid())
+  amount        Decimal
+  interestRate  Decimal   @db.Decimal(2, 1)
+  status        LoanStatus @default(PENDING)
+  accountId     String
+   account       Account   @relation(fields: [accountId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Branch {
+  id          String    @id @default(uuid())
+  name        String    @db.VarChar(255)
+  address     String    @db.VarChar(255)
+  accounts    Account[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
