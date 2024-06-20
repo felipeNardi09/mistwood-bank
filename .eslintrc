@@ -11,6 +11,12 @@
   ],
   "rules": {
     "no-console": "warn",
-    "prettier/prettier": "error"
+    "prettier/prettier": "error",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^req$|^res$|^next$"
+      }
+    ]
   }
 }

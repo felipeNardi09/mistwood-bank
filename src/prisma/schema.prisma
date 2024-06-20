@@ -12,8 +12,9 @@ model User {
   name        String    @db.VarChar(255)
   email       String    @unique
   password    String    @db.VarChar(255)
-  dateOfBirth DateTime  @db.Timestamp(3)
+  dateOfBirth DateTime
   accounts    Account[]
+  isActive   Boolean @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -33,8 +34,8 @@ model Account {
   branchId      String
   branch        Branch     @relation(fields: [branchId], references: [id])
   transferFromAccount   Transaction[] @relation(name: "from")
-   transferToAccount   Transaction[] @relation(name: "to")
-   loans Loan[]
+  transferToAccount   Transaction[] @relation(name: "to")
+  loans Loan[]
   cards         Card[]
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
@@ -53,9 +54,9 @@ model Transaction {
   date            DateTime    @default(now())
   description     String?
   accountId       String
-  destinationAccountId String
+  destinationAccountId String?
   account         Account     @relation( name: "from", fields: [accountId], references: [id])
-  destinationAccount Account @relation( name: "to", fields: [destinationAccountId],references: [id])
+  destinationAccount Account? @relation( name: "to", fields: [destinationAccountId],references: [id])
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 }
@@ -89,7 +90,7 @@ model Loan {
   interestRate  Decimal   @db.Decimal(2, 1)
   status        LoanStatus @default(PENDING)
   accountId     String
-   account       Account   @relation(fields: [accountId], references: [id])
+  account       Account   @relation(fields: [accountId], references: [id])
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
