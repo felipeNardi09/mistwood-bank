@@ -5,6 +5,7 @@ import prisma from 'src/prisma/prisma-client';
 import { parseISO } from 'date-fns';
 import bcrypt from 'bcrypt';
 import generateToken from './token.utils';
+import validateToken from './auth';
 
 const router = Router();
 
@@ -53,13 +54,32 @@ router.post(
 
 router.post(
   '/users/login',
-  catchAsyncErrors(
-    async (req: Request, res: Response, next: NextFunction) => {}
-  )
+  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.body.email || !req.body.password)
+      return next(
+        new AppError('You must provide your e-mail and password', 400)
+      );
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email: req.body.email
+      }
+    });
+
+    if (!user || !(await bcrypt.compare(req.body.password, user?.password)))
+      return next(new AppError('Invalid e-mail and/or password', 404));
+
+    const displayedUser = { ...user, password: undefined };
+
+    const token = generateToken(user.id);
+
+    return res.status(201).json({ user: displayedUser, token });
+  })
 );
 
 router.get(
   '/users',
+  validateToken,
   catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
     const users = await prisma.user.findMany({
       where: { isActive: true },
