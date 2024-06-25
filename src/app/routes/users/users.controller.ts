@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response, Router } from 'express';
 import AppError from 'src/app/models/appError';
-import catchAsyncErrors from 'src/app/utils/catchAsyncErrors';
+import catchAsyncErrors from 'src/utils/catchAsyncErrors';
 import prisma from 'src/prisma/prisma-client';
-import validateToken from './auth';
+import validateToken from '../../middlewares/auth';
 
 const router = Router();
 
@@ -19,7 +19,7 @@ router.get(
       return { ...user, password: undefined };
     });
 
-    res.status(200).json({ userData });
+    res.status(200).json({ total: users.length, users: userData });
   })
 );
 

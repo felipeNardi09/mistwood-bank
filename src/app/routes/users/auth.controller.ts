@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import { parseISO } from 'date-fns';
 import { NextFunction, Request, Response, Router } from 'express';
 import AppError from 'src/app/models/appError';
-import catchAsyncErrors from 'src/app/utils/catchAsyncErrors';
+import catchAsyncErrors from 'src/utils/catchAsyncErrors';
 import prisma from 'src/prisma/prisma-client';
 import generateToken from './token.utils';
 

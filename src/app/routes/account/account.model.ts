@@ -2,9 +2,9 @@ import { AccountType, Transaction } from '@prisma/client';
 import { Loan } from '../loans/loan.models';
 import { Card } from '../cards/card.model';
 
-export interface Accounts {
+export interface Account {
   id: string;
-  accountNumber: string;
+  accountId: string;
   balance: number;
   type: AccountType;
   userId: string;

@@ -26,10 +26,10 @@ enum AccountType {
 
 model Account {
   id            String     @id @default(uuid())
-  accountNumber String     @unique
-  balance       BigInt
+  accountId String     @unique
+  balance       Int
   type          AccountType
-  userId        String @unique
+  userId        String
   user          User       @relation(fields: [userId], references: [id])
   branchId      String
   branch        Branch     @relation(fields: [branchId], references: [id])
@@ -55,8 +55,8 @@ model Transaction {
   description     String?
   accountId       String
   destinationAccountId String?
-  account         Account     @relation( name: "from", fields: [accountId], references: [id])
-  destinationAccount Account? @relation( name: "to", fields: [destinationAccountId],references: [id])
+  account         Account     @relation( name: "from", fields: [accountId], references: [accountId])
+  destinationAccount Account? @relation( name: "to", fields: [destinationAccountId],references: [accountId])
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 }
@@ -73,7 +73,7 @@ model Card {
   expirationDate DateTime
   cvv           Int       @db.Integer
   accountId     String
-  account       Account   @relation(fields: [accountId], references: [id])
+  account       Account   @relation(fields: [accountId], references: [accountId])
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -90,7 +90,7 @@ model Loan {
   interestRate  Decimal   @db.Decimal(2, 1)
   status        LoanStatus @default(PENDING)
   accountId     String
-  account       Account   @relation(fields: [accountId], references: [id])
+  account       Account   @relation(fields: [accountId], references: [accountId])
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
