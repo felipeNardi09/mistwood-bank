@@ -29,7 +29,7 @@ const validateToken = async (
 
     next();
   } catch (error) {
-    return new AppError('Invalid token', 500);
+    return next(new AppError('Invalid token', 500));
   }
 };
 

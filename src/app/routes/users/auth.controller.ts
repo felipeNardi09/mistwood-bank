@@ -81,6 +81,8 @@ router.get(
   '/users',
   validateToken,
   catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
+    console.log('1');
+
     const users = await prisma.user.findMany({
       where: { isActive: true },
       orderBy: { createdAt: 'desc' }
