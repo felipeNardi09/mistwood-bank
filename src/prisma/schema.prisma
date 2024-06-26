@@ -73,7 +73,7 @@ model Card {
   expirationDate DateTime
   cvv           Int       @db.Integer
   accountId     String
-  account       Account   @relation(fields: [accountId], references: [accountId])
+  account       Account   @relation(fields: [accountId], references: [id])
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
