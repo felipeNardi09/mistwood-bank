@@ -75,7 +75,33 @@ router.get(
     //filter by user
     const accounts = await prisma.account.findMany();
 
-    res.status(200).json({ total: accounts.length, accounts });
+    return res.status(200).json({ total: accounts.length, accounts });
+  })
+);
+
+router.get(
+  '/account/user',
+  validateToken,
+  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
+    //filter by user
+    const accounts = await prisma.account.findMany();
+
+    return res.status(200).json({ total: accounts.length, accounts });
+  })
+);
+
+//find acc by id, only admins can reach this route
+router.get(
+  '/account/user/:id',
+  validateToken,
+  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
+    const accounts = await prisma.account.findMany({
+      where: {
+        userId: req.params.id
+      }
+    });
+
+    return res.status(200).json({ accounts });
   })
 );
 
@@ -89,7 +115,35 @@ router.get(
       }
     });
 
-    res.status(200).json({ total: accounts.length, accounts });
+    return res.status(200).json({ total: accounts.length, accounts });
+  })
+);
+
+router.delete(
+  '/account/delete/user-account/:accountId',
+  validateToken,
+  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
+    const accounts = await prisma.account.findMany({
+      where: {
+        userId: req.user.id
+      },
+      select: {
+        id: true
+      }
+    });
+
+    if (!accounts.some(account => account.id === req.params.accountId))
+      return next(
+        new AppError('You can not perform this action, enter a valid id', 403)
+      );
+
+    await prisma.account.delete({
+      where: {
+        id: req.params.accountId
+      }
+    });
+
+    return res.status(204).json();
   })
 );
 
