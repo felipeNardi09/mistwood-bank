@@ -1,4 +1,4 @@
-import { Accounts } from '../account/account.model';
+import { Account } from '../account/account.model';
 
 export interface User {
   id: string;
@@ -6,7 +6,7 @@ export interface User {
   email: string;
   password: string;
   dateOfBirth: Date;
-  accounts: Accounts[];
+  accounts: Account[];
   createdAt: Date;
   updatedAt: Date;
 }

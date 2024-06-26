@@ -11,12 +11,10 @@ router.post(
   '/account/registration',
   validateToken,
   catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    const numberOfAccounts = await prisma.account.count({
-      where: { userId: req.user.id }
-    });
-
-    if (numberOfAccounts > 2)
-      return next(new AppError('Users can have a maximum of 3 accounts', 400));
+    if (req.body.type !== 'CHECKING' && req.body.type !== 'SAVINGS')
+      return next(
+        new AppError('Type must be equal to SAVINGS or CHECKING', 400)
+      );
 
     const branch = await prisma.branch.findUnique({
       where: { id: req.body.branchId }
@@ -24,10 +22,36 @@ router.post(
 
     if (!branch) return next(new AppError('Provide a valid branch', 404));
 
-    if (req.body.type !== 'CHECKING' && req.body.type !== 'SAVINGS')
+    const userAccounts = await prisma.user.findUnique({
+      where: {
+        id: req.user.id
+      },
+      select: {
+        accounts: true
+      }
+    });
+
+    if (userAccounts && userAccounts.accounts.length >= 2)
       return next(
-        new AppError('Type must be equal to SAVINGS or CHECKING', 400)
+        new AppError('You already own the maximum number of accounts', 400)
       );
+
+    if (
+      userAccounts &&
+      req.body.type === 'CHECKING' &&
+      userAccounts.accounts.some(account => account.type === 'CHECKING')
+    )
+      return next(
+        new AppError('Users can have only one checking account', 400)
+      );
+
+    if (
+      userAccounts &&
+      req.body.type === 'SAVINGS' &&
+      userAccounts.accounts.some(account => account.type === 'SAVINGS')
+    )
+      return next(new AppError('Users can have only one savings account', 400));
+
     const formattedAccountId = uuidv4().slice(0, 13).replace('-', '');
 
     const account = await prisma.account.create({
