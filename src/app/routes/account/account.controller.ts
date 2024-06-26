@@ -67,20 +67,9 @@ router.post(
     return res.status(201).json({ account: account });
   })
 );
-
+//only admins can reach this route
 router.get(
   '/account/all-accounts',
-  validateToken,
-  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    //filter by user
-    const accounts = await prisma.account.findMany();
-
-    return res.status(200).json({ total: accounts.length, accounts });
-  })
-);
-
-router.get(
-  '/account/user',
   validateToken,
   catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
     //filter by user
@@ -118,7 +107,7 @@ router.get(
     return res.status(200).json({ total: accounts.length, accounts });
   })
 );
-
+//loans must be inactive for users to delete their account;
 router.delete(
   '/account/delete/user-account/:accountId',
   validateToken,
@@ -137,6 +126,24 @@ router.delete(
         new AppError('You can not perform this action, enter a valid id', 403)
       );
 
+    const account = await prisma.account.findUnique({
+      where: {
+        id: req.params.accountId
+      },
+      select: {
+        balance: true,
+        cards: true
+      }
+    });
+
+    if (account && account.balance)
+      return next(
+        new AppError('Your balance must be $0 to delete your account', 403)
+      );
+
+    if (account && account.cards.length !== 0)
+      return next(new AppError('You still have active cards', 403));
+
     await prisma.account.delete({
       where: {
         id: req.params.accountId
@@ -146,7 +153,7 @@ router.delete(
     return res.status(204).json();
   })
 );
-
+//only admins can reach this route;
 router.delete(
   '/account/delete/:id',
   validateToken,
