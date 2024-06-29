@@ -15,6 +15,7 @@ model User {
   dateOfBirth DateTime
   accounts    Account[]
   cards Card[]
+  loans Loan[]
   isActive   Boolean @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -93,7 +94,9 @@ model Loan {
   interestRate  Decimal   @db.Decimal(2, 1)
   status        LoanStatus @default(PENDING)
   accountId     String
-  account       Account   @relation(fields: [accountId], references: [accountId])
+  account       Account   @relation(fields: [accountId], references: [id])
+  userId String
+  user User @relation(fields: [userId], references: [id])
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }

@@ -6,6 +6,7 @@ export interface Loan {
   interestRate: number;
   status: LoanStatus;
   accountId: string;
+  userId: string;
   createdAt: Date;
   updatedAt: Date;
 }
