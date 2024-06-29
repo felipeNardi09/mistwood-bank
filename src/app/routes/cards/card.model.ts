@@ -7,6 +7,7 @@ export interface Card {
   expirationDate: Date;
   cvv: number;
   accountId: string;
+  userId: string;
   createdAt: Date;
   updatedAt: Date;
 }

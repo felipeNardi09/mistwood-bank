@@ -42,11 +42,26 @@ router.post(
         type: req.body.type,
         expirationDate: addYears(Date.now(), 2),
         cvv,
-        accountId: account.id
+        accountId: account.id,
+        userId: req.user.id
       }
     });
     res.status(201).json({ card });
   })
 );
 
+router.get(
+  '/cards/:accountId/',
+  validateToken,
+  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
+    const cards = await prisma.card.findMany({
+      where: {
+        accountId: req.params.accountId,
+        userId: req.user.id
+      }
+    });
+
+    return res.status(201).json({ cards });
+  })
+);
 export default router;
