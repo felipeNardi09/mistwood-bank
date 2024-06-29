@@ -5,6 +5,7 @@ import AppError from 'src/app/models/appError';
 import catchAsyncErrors from 'src/utils/catchAsyncErrors';
 import prisma from 'src/prisma/prisma-client';
 import generateToken from './token.utils';
+import { User } from '@prisma/client';
 
 const router = Router();
 
@@ -37,20 +38,19 @@ router.post(
 
     const hashedPass = await bcrypt.hash(password, 12);
 
-    const user = await prisma.user.create({
-      data: { name, email, password: hashedPass, dateOfBirth: formatedDate },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        password: false,
-        dateOfBirth: true
+    const user: User = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPass,
+        dateOfBirth: formatedDate
       }
     });
 
     const token = generateToken(user.id);
 
-    return res.status(201).json({ user, token });
+    const displayedUser = { ...user, password: undefined };
+    return res.status(201).json({ user: displayedUser, token });
   })
 );
 
@@ -62,7 +62,7 @@ router.post(
         new AppError('You must provide your e-mail and password', 400)
       );
 
-    const user = await prisma.user.findUnique({
+    const user: User | null = await prisma.user.findUnique({
       where: {
         email: req.body.email
       }

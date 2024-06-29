@@ -16,6 +16,7 @@ model User {
   accounts    Account[]
   cards Card[]
   loans Loan[]
+  transactions Transaction[]
   isActive   Boolean @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -51,14 +52,16 @@ enum TransactionType {
 
 model Transaction {
   id              String      @id @default(uuid())
-  amount          BigInt
+  amount          Int
   type            TransactionType
   date            DateTime    @default(now())
   description     String?
   accountId       String
+  account         Account     @relation( name: "from", fields: [accountId], references: [id])
   destinationAccountId String?
-  account         Account     @relation( name: "from", fields: [accountId], references: [accountId])
   destinationAccount Account? @relation( name: "to", fields: [destinationAccountId],references: [accountId])
+  userId String
+  user User @relation(fields: [userId], references: [id])
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 }
