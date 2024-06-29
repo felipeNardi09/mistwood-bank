@@ -90,7 +90,7 @@ enum LoanStatus {
 
 model Loan {
   id            String    @id @default(uuid())
-  amount        Decimal
+  amount        Int
   interestRate  Decimal   @db.Decimal(2, 1)
   status        LoanStatus @default(PENDING)
   accountId     String

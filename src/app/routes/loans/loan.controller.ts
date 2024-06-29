@@ -8,7 +8,7 @@ import { Account, Loan } from '@prisma/client';
 const router = Router();
 
 router.post(
-  '/loans/:accountId',
+  '/loans/request/:accountId',
   validateToken,
   catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
     const { amount, interestRate } = req.body;
@@ -58,7 +58,7 @@ router.get(
   '/loans/:accountId',
   validateToken,
   catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    const loans = await prisma.loan.findMany({
+    const loans: Loan[] = await prisma.loan.findMany({
       where: {
         accountId: req.params.accountId,
         userId: req.user.id
@@ -68,12 +68,65 @@ router.get(
     return res.status(200).json({ loans });
   })
 );
-
+//this route can only be accessed by admins
 router.patch(
-  '/loans/:loanId',
+  '/loans/:accountId/:loanId',
   validateToken,
-  catchAsyncErrors(
-    async (req: Request, res: Response, next: NextFunction) => {}
-  )
+  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
+    const { status } = req.body;
+
+    if (status !== 'APPROVED' && status !== 'REJECTED')
+      return next(
+        new AppError('To update the loan enter APPROVED or REJECTED', 400)
+      );
+
+    let loan: Loan | null = await prisma.loan.findUnique({
+      where: {
+        id: req.params.loanId
+      }
+    });
+
+    if (!loan)
+      return next(new AppError('There is no loan with provided id', 404));
+
+    if (loan.status === 'APPROVED' || loan.status === 'REJECTED')
+      return next(new AppError('Loan status is up to date', 403));
+
+    loan = await prisma.loan.update({
+      where: {
+        id: req.params.loanId,
+        accountId: req.params.accountId,
+        userId: req.user.id
+      },
+      data: {
+        status
+      }
+    });
+
+    if (loan.status === 'APPROVED') {
+      const account: Account | null = await prisma.account.findUnique({
+        where: {
+          id: req.params.accountId
+        }
+      });
+
+      if (account) {
+        const newBalance = (account.balance += loan.amount);
+
+        await prisma.account.update({
+          where: {
+            id: account.id
+          },
+          data: {
+            balance: newBalance
+          }
+        });
+
+        return res.status(200).json({ loan, account });
+      }
+    }
+
+    return res.status(200).json({ loan });
+  })
 );
 export default router;

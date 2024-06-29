@@ -28,6 +28,9 @@ app.use((err: AppError, req: Request, res: Response, next: NextFunction) => {
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (Array.isArray(err.meta?.target))
       errorMessage = `${err.meta.target.at(0).at(0).toUpperCase().concat(err.meta.target.at(0).slice(1))} already exists.`;
+
+    if (err.meta?.cause && typeof err.meta.cause === 'string')
+      errorMessage = err.meta?.cause;
   }
 
   return res.status(err.statusCode).json({
