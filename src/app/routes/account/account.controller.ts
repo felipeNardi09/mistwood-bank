@@ -3,7 +3,6 @@ import AppError from 'src/app/models/appError';
 import catchAsyncErrors from 'src/utils/catchAsyncErrors';
 import prisma from 'src/prisma/prisma-client';
 import validateToken from '../../middlewares/auth';
-import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
@@ -52,11 +51,8 @@ router.post(
     )
       return next(new AppError('Users can have only one savings account', 400));
 
-    const formattedAccountId = uuidv4().slice(0, 13).replace('-', '');
-
     const account = await prisma.account.create({
       data: {
-        accountId: formattedAccountId,
         balance: 0,
         type: req.body.type,
         userId: req.user.id,

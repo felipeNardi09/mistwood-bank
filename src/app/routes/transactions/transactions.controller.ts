@@ -26,15 +26,15 @@ router.post(
     if (!account)
       return next(new AppError('There is no account with provided id', 404));
 
-    const newBalance = (account.balance += amount);
-
-    await prisma.account.update({
+    const updatedAccount = await prisma.account.update({
       where: {
         id: account.id,
         userId: req.user.id
       },
       data: {
-        balance: newBalance
+        balance: {
+          increment: amount
+        }
       }
     });
 
@@ -47,7 +47,13 @@ router.post(
       }
     });
 
-    return res.status(201).json({ deposit, account });
+    return res.status(201).json({
+      deposit,
+      account: {
+        ...updatedAccount,
+        balanceBeforeTransaction: account.balance
+      }
+    });
   })
 );
 
@@ -70,18 +76,18 @@ router.post(
     if (!account)
       return next(new AppError('There is no account with provided id', 404));
 
-    if (account.balance < amount)
+    if (amount > account.balance)
       return next(new AppError('Insufficient funds', 400));
 
-    const newBalance = (account.balance -= amount);
-
-    await prisma.account.update({
+    const updatedAccount = await prisma.account.update({
       where: {
         id: account.id,
         userId: req.user.id
       },
       data: {
-        balance: newBalance
+        balance: {
+          decrement: amount
+        }
       }
     });
 
@@ -94,7 +100,13 @@ router.post(
       }
     });
 
-    return res.status(201).json({ withdrawal, account });
+    return res.status(201).json({
+      withdrawal,
+      account: {
+        ...updatedAccount,
+        balanceBeforeTransaction: account.balance
+      }
+    });
   })
 );
 
@@ -105,7 +117,88 @@ router.post(
     return res.status(200).json({});
   })
 );
+router.patch(
+  '/transactions/transfer/:accountId',
+  validateToken,
+  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
+    const { amount, destinationAccountId, description } = req.body;
 
+    const formattedDescription = description.slice(0, 200);
+
+    try {
+      await prisma.$transaction(async instance => {
+        const fromAccount = await instance.account.findUnique({
+          where: {
+            id: req.params.accountId,
+            userId: req.user.id
+          }
+        });
+
+        if (!fromAccount)
+          return next(
+            new AppError(
+              'Origin account does not exist, provide a valid one',
+              404
+            )
+          );
+
+        if (amount > fromAccount.balance)
+          return next(new AppError('Insufficient funds', 400));
+
+        const destinationAccountUpdated = await instance.account.update({
+          data: {
+            balance: {
+              increment: amount
+            }
+          },
+          where: {
+            id: destinationAccountId
+          }
+        });
+
+        if (!destinationAccountUpdated)
+          return next(
+            new AppError(
+              'Destination account id does not existe, provide a valid one',
+              404
+            )
+          );
+
+        const fromAccountUpdated = await instance.account.update({
+          where: {
+            id: fromAccount.id
+          },
+          data: {
+            balance: {
+              decrement: amount
+            }
+          }
+        });
+
+        const transfer: Transaction = await instance.transaction.create({
+          data: {
+            amount,
+            destinationAccountId,
+            description: formattedDescription,
+            userId: req.user.id,
+            type: 'TRANSFER',
+            accountId: req.params.accountId
+          }
+        });
+
+        return res.status(200).json({
+          transfer,
+          from: fromAccountUpdated,
+          destination: destinationAccountUpdated
+        });
+      });
+    } catch (error) {
+      return next(new AppError('Invalid account id', 404));
+    }
+  })
+);
+
+//only admins can have access:
 router.get(
   '/transactions/:accountId',
   validateToken,

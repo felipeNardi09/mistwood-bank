@@ -29,15 +29,14 @@ enum AccountType {
 
 model Account {
   id            String     @id @default(uuid())
-  accountId String     @unique
-  balance       Int
+   balance       Int
   type          AccountType
   userId        String
   user          User       @relation(fields: [userId], references: [id])
   branchId      String
   branch        Branch     @relation(fields: [branchId], references: [id])
-  transferFromAccount   Transaction[] @relation(name: "from")
-  transferToAccount   Transaction[] @relation(name: "to")
+  transferFromAccount   Transaction[] @relation(name: "fromAccount")
+  transferToAccount   Transaction[] @relation(name: "destinationAccount")
   loans Loan[]
   cards         Card[]
   createdAt     DateTime   @default(now())
@@ -57,9 +56,9 @@ model Transaction {
   date            DateTime    @default(now())
   description     String?
   accountId       String
-  account         Account     @relation( name: "from", fields: [accountId], references: [id])
+  account         Account     @relation( name: "fromAccount", fields: [accountId], references: [id])
   destinationAccountId String?
-  destinationAccount Account? @relation( name: "to", fields: [destinationAccountId],references: [accountId])
+  destinationAccount Account? @relation( name: "destinationAccount", fields: [destinationAccountId],references: [id])
   userId String
   user User @relation(fields: [userId], references: [id])
   createdAt       DateTime    @default(now())
