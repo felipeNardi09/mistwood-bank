@@ -117,7 +117,7 @@ router.post(
     return res.status(200).json({});
   })
 );
-router.patch(
+router.post(
   '/transactions/transfer/:accountId',
   validateToken,
   catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {

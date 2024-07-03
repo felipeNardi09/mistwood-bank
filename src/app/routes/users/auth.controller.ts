@@ -1,82 +1,47 @@
-import bcrypt from 'bcrypt';
-import { parseISO } from 'date-fns';
 import { NextFunction, Request, Response, Router } from 'express';
-import AppError from 'src/app/models/appError';
-import catchAsyncErrors from 'src/utils/catchAsyncErrors';
-import prisma from 'src/prisma/prisma-client';
-import generateToken from './token.utils';
-import { User } from '@prisma/client';
+import { createUser, getCurrentUser, login } from './auth.service';
+import validateToken from 'src/app/middlewares/auth';
 
 const router = Router();
 
 router.post(
   '/users/signup',
-  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    const { password, confirmPassword, dateOfBirth } = req.body;
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = await createUser(req.body, next);
 
-    const name = req.body.name.trim();
-    const email = req.body.email.trim();
-
-    if (!name || !email || !password || !confirmPassword || !dateOfBirth)
-      return next(new AppError('Fill all the fields', 400));
-
-    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,12}$/.test(password))
-      return next(
-        new AppError(
-          'Your password must contain from 8 to 12 chacacters, at least an uppercase letter, a lowercase and a number.',
-          400
-        )
-      );
-
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth))
-      return next(new AppError('Date must be yyyy-mm-dd', 400));
-
-    if (password !== confirmPassword)
-      return next(new AppError('Passwords must match', 400));
-
-    const formatedDate = parseISO(dateOfBirth);
-
-    const hashedPass = await bcrypt.hash(password, 12);
-
-    const user: User = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPass,
-        dateOfBirth: formatedDate
-      }
-    });
-
-    const token = generateToken(user.id);
-
-    const displayedUser = { ...user, password: undefined };
-    return res.status(201).json({ user: displayedUser, token });
-  })
+      return res.status(201).json(user);
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 router.post(
   '/users/login',
-  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    if (!req.body.email || !req.body.password)
-      return next(
-        new AppError('You must provide your e-mail and password', 400)
-      );
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = await login(req.body);
 
-    const user: User | null = await prisma.user.findUnique({
-      where: {
-        email: req.body.email
-      }
-    });
+      return res.status(201).json(user);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
-    if (!user || !(await bcrypt.compare(req.body.password, user?.password)))
-      return next(new AppError('Invalid e-mail and/or password', 404));
+router.get(
+  '/users/current-user',
+  validateToken,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = await getCurrentUser(req.user.id);
 
-    const displayedUser = { ...user, password: undefined };
-
-    const token = generateToken(user.id);
-
-    return res.status(201).json({ user: displayedUser, token });
-  })
+      return res.status(200).json(user);
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 export default router;
