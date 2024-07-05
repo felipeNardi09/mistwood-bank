@@ -1,55 +1,39 @@
 import { NextFunction, Request, Response, Router } from 'express';
-import AppError from 'src/app/models/appError';
-import catchAsyncErrors from 'src/utils/catchAsyncErrors';
-import prisma from 'src/prisma/prisma-client';
 import validateToken from '../../middlewares/auth';
-import { User } from '@prisma/client';
+import { getAllUsers, getUserById } from './users.service';
 
 const router = Router();
 
 router.get(
   '/users',
   validateToken,
-  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    const users: User[] = await prisma.user.findMany({
-      where: { isActive: true },
-      orderBy: { createdAt: 'desc' }
-    });
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const users = await getAllUsers(
+        typeof req.query.offset === 'string' ? req.query.offset : undefined,
+        typeof req.query.limit === 'string' ? req.query.limit : undefined,
+        typeof req.query.name === 'string' ? req.query.name : undefined,
+        typeof req.query.email === 'string' ? req.query.email : undefined
+      );
 
-    const userData = users.map(user => {
-      return { ...user, password: undefined };
-    });
-
-    res.status(200).json({ total: users.length, users: userData });
-  })
+      res.status(200).json({ total: users.length, users });
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 router.get(
   '/users/:id',
-  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    const user: User | null = await prisma.user.findUnique({
-      where: {
-        id: req.params.id
-      }
-    });
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = await getUserById(req.params.id);
 
-    if (!user)
-      return next(new AppError('There is no user with the provided id', 404));
-
-    const displayedUser = { ...user, password: undefined };
-
-    return res.status(200).json({ user: displayedUser });
-  })
-);
-
-//remove later
-router.delete(
-  '/users/delete',
-  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    await prisma.user.deleteMany();
-
-    return res.status(203).json({ message: 'You deleted all the users' });
-  })
+      return res.status(200).json(user);
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 export default router;

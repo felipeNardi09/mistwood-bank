@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import authRouter from './users/auth.controller';
+import authRouter from './auth/auth.controller';
 import usersRouter from './users/users.controller';
 import branchesRouter from './branch/branch.controller';
 import accountsRouter from './account/account.controller';

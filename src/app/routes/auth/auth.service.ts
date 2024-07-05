@@ -4,9 +4,19 @@ import { parseISO } from 'date-fns';
 import AppError from 'src/app/models/appError';
 import prisma from 'src/prisma/prisma-client';
 import generateToken from './token.utils';
-import { RegisterInput } from './register-input.model';
 import { User } from '@prisma/client';
-import { LoginInput } from './login-input.model';
+
+interface RegisterInput {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  dateOfBirth: string;
+}
+interface LoginInput {
+  email: string;
+  password: string;
+}
 
 const checkEmailUniqueness = async (email: string) => {
   const existingEmail = await prisma.user.findUnique({

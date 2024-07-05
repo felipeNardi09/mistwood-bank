@@ -1,10 +1,9 @@
-import express, { Request, Response, NextFunction } from 'express';
-import cors from 'cors';
 import * as bodyParser from 'body-parser';
+import cors from 'cors';
 import 'dotenv/config';
+import express, { NextFunction, Request, Response } from 'express';
 import AppError from './models/appError';
 import routes from './routes/routes';
-import { Prisma } from '@prisma/client';
 
 const app = express();
 
@@ -23,19 +22,9 @@ app.use((err: AppError, req: Request, res: Response, next: NextFunction) => {
   err.statusCode = err.statusCode || 500;
   err.message = err.message || 'Something went wrong';
 
-  let errorMessage = err.message;
-  //Se existir mais de um campo unico ehbem provavel que va quebrar;
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    if (Array.isArray(err.meta?.target))
-      errorMessage = `${err.meta.target.at(0).at(0).toUpperCase().concat(err.meta.target.at(0).slice(1))} already exists.`;
-
-    if (err.meta?.cause && typeof err.meta.cause === 'string')
-      errorMessage = err.meta?.cause;
-  }
-
   return res.status(err.statusCode).json({
     err,
-    message: errorMessage,
+    message: err.message,
     ...(process.env.NODE_ENV === 'production' ? null : { stack: err.stack })
   });
 });
