@@ -1,6 +1,4 @@
 import { NextFunction, Request, Response, Router } from 'express';
-import AppError from 'src/app/models/appError';
-import prisma from 'src/prisma/prisma-client';
 import catchAsyncErrors from 'src/utils/catchAsyncErrors';
 import validateToken from '../../middlewares/auth';
 import {

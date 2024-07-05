@@ -2,7 +2,7 @@ import { Account } from '@prisma/client';
 import AppError from 'src/app/models/appError';
 import prisma from 'src/prisma/prisma-client';
 import { RegisterAccountInput } from './register-account-input.model';
-import { AccountValidation } from './validate-account';
+import { AccountValidation } from './validate-account.model';
 
 const validateBeforeDelete = (account: AccountValidation) => {
   if (account.balance)
