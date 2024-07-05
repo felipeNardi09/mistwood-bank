@@ -1,153 +1,88 @@
-import { Request, Response, NextFunction, Router } from 'express';
+import { NextFunction, Request, Response, Router } from 'express';
 import AppError from 'src/app/models/appError';
-import catchAsyncErrors from 'src/utils/catchAsyncErrors';
 import prisma from 'src/prisma/prisma-client';
+import catchAsyncErrors from 'src/utils/catchAsyncErrors';
 import validateToken from '../../middlewares/auth';
+import {
+  deleteCurrentLoggedUserAccountByAccountId,
+  getAccountByUserId,
+  getAllAccounts,
+  getLoggedUserAccounts,
+  registerAccount
+} from './account.service';
 
 const router = Router();
 
 router.post(
   '/account/registration',
   validateToken,
-  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    if (req.body.type !== 'CHECKING' && req.body.type !== 'SAVINGS')
-      return next(
-        new AppError('Type must be equal to SAVINGS or CHECKING', 400)
-      );
-
-    const branch = await prisma.branch.findUnique({
-      where: { id: req.body.branchId }
-    });
-
-    if (!branch) return next(new AppError('Provide a valid branch', 404));
-
-    const userAccounts = await prisma.user.findUnique({
-      where: {
-        id: req.user.id
-      },
-      select: {
-        accounts: true
-      }
-    });
-
-    if (userAccounts && userAccounts.accounts.length >= 2)
-      return next(
-        new AppError('You already own the maximum number of accounts', 400)
-      );
-
-    if (
-      userAccounts &&
-      req.body.type === 'CHECKING' &&
-      userAccounts.accounts.some(account => account.type === 'CHECKING')
-    )
-      return next(
-        new AppError('Users can have only one checking account', 400)
-      );
-
-    if (
-      userAccounts &&
-      req.body.type === 'SAVINGS' &&
-      userAccounts.accounts.some(account => account.type === 'SAVINGS')
-    )
-      return next(new AppError('Users can have only one savings account', 400));
-
-    const account = await prisma.account.create({
-      data: {
-        balance: 0,
-        type: req.body.type,
-        userId: req.user.id,
-        branchId: branch.id
-      }
-    });
-
-    return res.status(201).json({ account: account });
-  })
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const account = await registerAccount(req.body, req.user.id);
+      return res.status(201).json(account);
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 //only admins can reach this route
 router.get(
-  '/account/all-accounts',
+  '/account',
   validateToken,
   catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    //filter by user
-    const accounts = await prisma.account.findMany();
+    const accounts = await getAllAccounts(
+      typeof req.query.offset === 'string' ? req.query.offset : undefined,
+      typeof req.query.limit === 'string' ? req.query.limit : undefined
+    );
 
-    return res.status(200).json({ total: accounts.length, accounts });
+    return res.status(200).json(accounts);
   })
+);
+router.get(
+  '/account/current-user-accounts',
+  validateToken,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const accounts = await getLoggedUserAccounts(req.user.id);
+
+      return res.status(200).json(accounts);
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 //find acc by id, only admins can reach this route
 router.get(
-  '/account/user/:id',
+  '/account/:userId',
   validateToken,
-  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    const accounts = await prisma.account.findMany({
-      where: {
-        userId: req.params.id
-      }
-    });
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const accounts = await getAccountByUserId(req.params.userId);
 
-    return res.status(200).json({ accounts });
-  })
+      return res.status(200).json(accounts);
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
-router.get(
-  '/account/current-user-accounts',
-  validateToken,
-  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    const accounts = await prisma.account.findMany({
-      where: {
-        userId: req.user.id
-      }
-    });
-
-    return res.status(200).json({ total: accounts.length, accounts });
-  })
-);
 //loans must be inactive for users to delete their account;
 router.delete(
   '/account/delete/user-account/:accountId',
   validateToken,
-  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    const accounts = await prisma.account.findMany({
-      where: {
-        userId: req.user.id
-      },
-      select: {
-        id: true
-      }
-    });
-
-    if (!accounts.some(account => account.id === req.params.accountId))
-      return next(
-        new AppError('You can not perform this action, enter a valid id', 403)
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await deleteCurrentLoggedUserAccountByAccountId(
+        req.user.id,
+        req.params.accountId
       );
 
-    const account = await prisma.account.findUnique({
-      where: {
-        id: req.params.accountId
-      },
-      select: {
-        balance: true,
-        cards: true
-      }
-    });
-
-    if (account && account.balance)
-      return next(
-        new AppError('Your balance must be $0 to delete your account', 403)
-      );
-
-    if (account && account.cards.length !== 0)
-      return next(new AppError('You still have active cards', 403));
-
-    await prisma.account.delete({
-      where: {
-        id: req.params.accountId
-      }
-    });
-
-    return res.status(204).json();
-  })
+      return res.status(204).json();
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 //only admins can reach this route;
 router.delete(

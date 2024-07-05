@@ -16,7 +16,7 @@ router.get(
         typeof req.query.email === 'string' ? req.query.email : undefined
       );
 
-      res.status(200).json({ total: users.length, users });
+      res.status(200).json(users);
     } catch (error) {
       next(error);
     }

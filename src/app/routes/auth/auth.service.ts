@@ -5,18 +5,8 @@ import AppError from 'src/app/models/appError';
 import prisma from 'src/prisma/prisma-client';
 import generateToken from './token.utils';
 import { User } from '@prisma/client';
-
-interface RegisterInput {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  dateOfBirth: string;
-}
-interface LoginInput {
-  email: string;
-  password: string;
-}
+import { RegisterInput } from './register-input.model';
+import { LoginInput } from './login-input.model';
 
 const checkEmailUniqueness = async (email: string) => {
   const existingEmail = await prisma.user.findUnique({
