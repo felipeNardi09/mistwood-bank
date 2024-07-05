@@ -1,7 +1,24 @@
+import { Account } from '@prisma/client';
 import AppError from 'src/app/models/appError';
 import prisma from 'src/prisma/prisma-client';
 import { RegisterAccountInput } from './register-account-input.model';
-import { Account } from '@prisma/client';
+import { AccountValidation } from './validate-account';
+
+const validateBeforeDelete = (account: AccountValidation) => {
+  if (account.balance)
+    throw new AppError('To delete your account the balance must be 0', 405);
+
+  if (account.cards.length)
+    throw new AppError(
+      'You must deactivate your cards before deleting your account',
+      405
+    );
+  if (account.loans.some(loan => loan.status === 'APPROVED'))
+    throw new AppError(
+      'Please settle your debt before deactivating your account',
+      405
+    );
+};
 
 export const getAllAccounts = async (
   offset: string | undefined,
@@ -106,8 +123,8 @@ export const deleteCurrentLoggedUserAccountByAccountId = async (
     select: {
       id: true,
       balance: true,
-      cards: true,
-      loans: true
+      loans: true,
+      cards: true
     }
   });
 
@@ -117,19 +134,31 @@ export const deleteCurrentLoggedUserAccountByAccountId = async (
       403
     );
 
-  if (account.balance)
-    throw new AppError('To delete your account the balance must be 0', 405);
+  validateBeforeDelete(account);
 
-  if (account.cards.length)
-    throw new AppError(
-      'You must deactivate your cards before deleting your account',
-      405
-    );
-  if (account.loans.some(loan => loan.status === 'APPROVED'))
-    throw new AppError(
-      'Please settle your debt before deactivating your account',
-      405
-    );
+  await prisma.account.delete({
+    where: {
+      id: account.id
+    }
+  });
+};
+
+export const deleteAccountById = async (id: string) => {
+  const account = await prisma.account.findUnique({
+    where: {
+      id
+    },
+    select: {
+      id: true,
+      balance: true,
+      cards: true,
+      loans: true
+    }
+  });
+
+  if (!account) throw new AppError('There ir no account with provided id', 404);
+
+  validateBeforeDelete(account);
 
   await prisma.account.delete({
     where: {

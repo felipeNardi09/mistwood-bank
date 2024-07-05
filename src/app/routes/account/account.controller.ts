@@ -4,6 +4,7 @@ import prisma from 'src/prisma/prisma-client';
 import catchAsyncErrors from 'src/utils/catchAsyncErrors';
 import validateToken from '../../middlewares/auth';
 import {
+  deleteAccountById,
   deleteCurrentLoggedUserAccountByAccountId,
   getAccountByUserId,
   getAllAccounts,
@@ -88,40 +89,14 @@ router.delete(
 router.delete(
   '/account/delete/:id',
   validateToken,
-  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    const account = await prisma.account.findUnique({
-      where: {
-        id: req.params.id
-      },
-      select: {
-        id: true,
-        balance: true,
-        cards: true
-      }
-    });
-
-    if (!account)
-      return next(new AppError('There is no account with provided id', 404));
-
-    if (account.balance !== 0)
-      return next(new AppError('Balance must be 0 to delete an account', 400));
-
-    if (account.cards.length)
-      return next(
-        new AppError(
-          'To delete an account you can not have cards registered',
-          400
-        )
-      );
-
-    await prisma.account.delete({
-      where: {
-        id: account.id
-      }
-    });
-
-    return res.status(204).json();
-  })
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await deleteAccountById(req.params.id);
+      return res.status(204).json();
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 export default router;
