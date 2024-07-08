@@ -51,7 +51,7 @@ router.get(
   }
 );
 
-//find acc by id, only admins can reach this route
+//only admins can reach this route
 router.get(
   '/account/:userId',
   validateToken,
