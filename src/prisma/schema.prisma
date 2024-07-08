@@ -76,7 +76,6 @@ model Card {
   type          CardType  @default(DEBIT)
   expirationDate DateTime
   cvv           Int       @db.Integer
-  accountId     String
   account       Account   @relation(fields: [accountId], references: [id])
   userId String
   user          User @relation(fields: [userId], references: [id])

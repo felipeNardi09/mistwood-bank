@@ -1,67 +1,52 @@
-import { Request, Response, NextFunction, Router } from 'express';
-import AppError from 'src/app/models/appError';
-import catchAsyncErrors from 'src/utils/catchAsyncErrors';
-import prisma from 'src/prisma/prisma-client';
+import { NextFunction, Request, Response, Router } from 'express';
 import validateToken from '../../middlewares/auth';
-import { addYears } from 'date-fns';
-import { Card } from '@prisma/client';
+import { getCardById, getCardsByAccountId, registerCard } from './card.service';
 
 const router = Router();
 
 router.post(
   '/cards/:accountId/registration',
   validateToken,
-  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    const account = await prisma.account.findUnique({
-      where: {
-        id: req.params.accountId,
-        userId: req.user.id
-      },
-      select: {
-        id: true,
-        accountId: true,
-        cards: true
-      }
-    });
-    if (!account) return next(new AppError('Provide a valid account', 400));
-
-    if (account.cards.length >= 2)
-      return next(
-        new AppError('An account can not have more than 2 cards', 403)
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const card = await registerCard(
+        req.params.accountId,
+        req.user.id,
+        req.body.type
       );
+      res.status(201).json({ card });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
-    if (req.body.type !== 'CREDIT' && req.body.type !== 'DEBIT')
-      return next(new AppError('Type must be equal to CREDIT or DEBIT', 400));
-
-    const cardNumber = `5000${Math.floor(Math.random() * 899999999999) + 100000000000}`;
-    const cvv = Math.floor(Math.random() * 899) + 100;
-
-    const card: Card = await prisma.card.create({
-      data: {
-        cardNumber,
-        type: req.body.type,
-        expirationDate: addYears(Date.now(), 2),
-        cvv,
-        accountId: account.id,
-        userId: req.user.id
-      }
-    });
-    res.status(201).json({ card });
-  })
+router.get(
+  '/cards/card/:cardId',
+  validateToken,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const card = await getCardById(req.params.cardId, req.user.id);
+      return res.status(200).json(card);
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 router.get(
   '/cards/:accountId/',
   validateToken,
-  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    const cards = await prisma.card.findMany({
-      where: {
-        accountId: req.params.accountId,
-        userId: req.user.id
-      }
-    });
-
-    return res.status(201).json({ cards });
-  })
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const cards = await getCardsByAccountId(
+        req.params.accountId,
+        req.user.id
+      );
+      return res.status(201).json(cards);
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 export default router;
