@@ -7,6 +7,7 @@ import generateToken from './token.utils';
 import { User } from '@prisma/client';
 import { RegisterInput } from './register-input.model';
 import { LoginInput } from './login-input.model';
+//import { Email } from 'src/utils/email';
 
 const checkEmailUniqueness = async (email: string) => {
   const existingEmail = await prisma.user.findUnique({
@@ -59,7 +60,13 @@ export const createUser = async (input: RegisterInput, next: NextFunction) => {
 
   const token = generateToken(user.id);
 
+  /*   await new Email({ name, email }).sendEmail(
+    'welcome',
+    `Welcome to Mistwood Bank!`
+  ); */
+
   const displayedUser = { ...user, password: undefined };
+
   return { user: displayedUser, token };
 };
 
