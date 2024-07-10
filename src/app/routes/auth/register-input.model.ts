@@ -4,4 +4,5 @@ export interface RegisterInput {
   password: string;
   confirmPassword: string;
   dateOfBirth: string;
+  role: 'USER' | 'ADMIN';
 }

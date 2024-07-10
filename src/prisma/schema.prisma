@@ -6,13 +6,18 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
+enum UserRole {
+  ADMIN
+  USER
+}
 model User {
   id          String    @id @default(uuid())
   name        String    @db.VarChar(255)
   email       String    @unique
   password    String    @db.VarChar(255)
   dateOfBirth DateTime
+  role UserRole @default(USER)
+  isVerified Boolean @default(false)
   accounts    Account[]
   cards Card[]
   loans Loan[]

@@ -4,9 +4,9 @@ import { parseISO } from 'date-fns';
 import AppError from 'src/app/models/appError';
 import prisma from 'src/prisma/prisma-client';
 import generateToken from './token.utils';
-import { User } from '@prisma/client';
 import { RegisterInput } from './register-input.model';
 import { LoginInput } from './login-input.model';
+import { User } from '@prisma/client';
 //import { Email } from 'src/utils/email';
 
 const checkEmailUniqueness = async (email: string) => {
@@ -18,18 +18,21 @@ const checkEmailUniqueness = async (email: string) => {
 };
 
 export const createUser = async (input: RegisterInput, next: NextFunction) => {
+  if (!input.name) throw new AppError('Enter your name', 422);
+
+  if (!input.email) throw new AppError('Enter your email', 422);
+
+  if (!input.password) throw new AppError('Enter your password', 422);
+
+  if (!input.dateOfBirth) throw new AppError('Enter your date of birth', 422);
+
+  if (input.role !== 'USER' && input.role !== 'ADMIN')
+    throw new AppError('Role must be USER or ADMIN', 422);
+
   const name = input.name.trim();
   const email = input.email.trim();
   const password = input.password.trim();
-  const { confirmPassword, dateOfBirth } = input;
-
-  if (!name) throw new AppError('Enter your name', 422);
-
-  if (!email) throw new AppError('Enter your email', 422);
-
-  if (!password) throw new AppError('Enter your password', 422);
-
-  if (!dateOfBirth) throw new AppError('Enter your date of birth', 422);
+  const { confirmPassword, dateOfBirth, role } = input;
 
   if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,12}$/.test(password))
     throw new AppError(
@@ -49,12 +52,13 @@ export const createUser = async (input: RegisterInput, next: NextFunction) => {
 
   const hashedPass = await bcrypt.hash(password, 12);
 
-  const user: User = await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       name,
       email,
       password: hashedPass,
-      dateOfBirth: formatedDate
+      dateOfBirth: formatedDate,
+      role
     }
   });
 
@@ -68,6 +72,26 @@ export const createUser = async (input: RegisterInput, next: NextFunction) => {
   const displayedUser = { ...user, password: undefined };
 
   return { user: displayedUser, token };
+};
+
+export const verifyUser = async (id: string) => {
+  const user = await prisma.user.findUnique({
+    where: {
+      id
+    }
+  });
+
+  if (user && user.isVerified)
+    throw new AppError('User is alredy verified', 403);
+
+  await prisma.user.update({
+    where: {
+      id
+    },
+    data: {
+      isVerified: true
+    }
+  });
 };
 
 export const login = async (userPayload: LoginInput) => {

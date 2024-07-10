@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response, Router } from 'express';
-import { createUser, getCurrentUser, login } from './auth.service';
+import { createUser, getCurrentUser, login, verifyUser } from './auth.service';
 import validateToken from 'src/app/middlewares/auth';
 
 const router = Router();
@@ -11,6 +11,20 @@ router.post(
       const user = await createUser(req.body, next);
 
       return res.status(201).json(user);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.patch(
+  '/users/verify',
+  validateToken,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await verifyUser(req.user.id);
+
+      return res.status(204).json();
     } catch (error) {
       next(error);
     }
