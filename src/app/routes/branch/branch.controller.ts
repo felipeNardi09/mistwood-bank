@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response, Router } from 'express';
-import catchAsyncErrors from 'src/utils/catchAsyncErrors';
 import validateToken from '../../middlewares/auth';
 import {
   getAllBranches,
@@ -25,7 +24,7 @@ router.post(
 router.get(
   '/branch/all-branches',
   validateToken,
-  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const branches = await getAllBranches();
 
@@ -33,7 +32,7 @@ router.get(
     } catch (error) {
       next(error);
     }
-  })
+  }
 );
 
 router.get(

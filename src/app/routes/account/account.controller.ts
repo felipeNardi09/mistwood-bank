@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response, Router } from 'express';
-import catchAsyncErrors from 'src/utils/catchAsyncErrors';
 import validateToken from '../../middlewares/auth';
 import {
   deleteAccountById,
@@ -28,15 +27,20 @@ router.post(
 router.get(
   '/account',
   validateToken,
-  catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-    const accounts = await getAllAccounts(
-      typeof req.query.offset === 'string' ? req.query.offset : undefined,
-      typeof req.query.limit === 'string' ? req.query.limit : undefined
-    );
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const accounts = await getAllAccounts(
+        typeof req.query.offset === 'string' ? req.query.offset : undefined,
+        typeof req.query.limit === 'string' ? req.query.limit : undefined
+      );
 
-    return res.status(200).json(accounts);
-  })
+      return res.status(200).json(accounts);
+    } catch (error) {
+      next(error);
+    }
+  }
 );
+
 router.get(
   '/account/current-user-accounts',
   validateToken,
