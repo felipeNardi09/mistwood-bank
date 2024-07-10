@@ -5,6 +5,7 @@ import {
   requestLoan,
   updateLoanStatus
 } from './loan.service';
+import { roleRestriction } from 'src/app/middlewares/roleVerification';
 
 const router = Router();
 
@@ -48,10 +49,11 @@ router.get(
     }
   }
 );
-//this route can only be accessed by admins
+
 router.patch(
   '/loans/:accountId/:loanId',
   validateToken,
+  roleRestriction,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const loan = await updateLoanStatus(

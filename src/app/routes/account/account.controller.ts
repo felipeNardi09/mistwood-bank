@@ -8,6 +8,7 @@ import {
   getLoggedUserAccounts,
   registerAccount
 } from './account.service';
+import { roleRestriction } from 'src/app/middlewares/roleVerification';
 
 const router = Router();
 
@@ -23,10 +24,11 @@ router.post(
     }
   }
 );
-//only admins can reach this route
+
 router.get(
   '/account',
   validateToken,
+  roleRestriction,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const accounts = await getAllAccounts(
@@ -55,10 +57,10 @@ router.get(
   }
 );
 
-//only admins can reach this route
 router.get(
   '/account/:userId',
   validateToken,
+  roleRestriction,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const accounts = await getAccountByUserId(req.params.userId);
@@ -88,10 +90,10 @@ router.delete(
   }
 );
 
-//only admins can reach this route;
 router.delete(
   '/account/delete/:id',
   validateToken,
+  roleRestriction,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       await deleteAccountById(req.params.id);

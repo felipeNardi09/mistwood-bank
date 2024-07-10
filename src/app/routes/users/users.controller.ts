@@ -1,12 +1,14 @@
 import { NextFunction, Request, Response, Router } from 'express';
 import validateToken from '../../middlewares/auth';
 import { getAllUsers, getUserById } from './users.service';
+import { roleRestriction } from 'src/app/middlewares/roleVerification';
 
 const router = Router();
 
 router.get(
   '/users',
   validateToken,
+  roleRestriction,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const users = await getAllUsers(
@@ -25,6 +27,7 @@ router.get(
 
 router.get(
   '/users/:id',
+  roleRestriction,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = await getUserById(req.params.id);

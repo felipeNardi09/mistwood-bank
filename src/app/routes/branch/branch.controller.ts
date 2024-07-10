@@ -5,12 +5,14 @@ import {
   getBranchById,
   registerBranch
 } from './branch.service';
+import { roleRestriction } from 'src/app/middlewares/roleVerification';
 
 const router = Router();
 
 router.post(
   '/branch/registration',
   validateToken,
+  roleRestriction,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const branch = await registerBranch(req.body);
